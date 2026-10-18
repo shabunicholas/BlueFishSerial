@@ -34,6 +34,7 @@ signals:
     void openF(const QString &str);
     void openS(const QString &str);
     void close(const QString &str);
+    void writeNote(const QString &str,bool is,qint64 n);
 public slots:
     void onSetName(const QString &name);
     void onSetBaudRate(qint32 v);

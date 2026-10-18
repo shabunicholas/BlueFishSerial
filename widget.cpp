@@ -37,6 +37,7 @@ void Widget::onRead(const QByteArray &data)
     ui->label_2->setText(QString("读了:%1字节").arg(read_));
 
     if(ui->checkBox->isChecked()){
+
        ui->textEdit_show->append("<<"+data.toHex(' ').toUpper());
     }else{
        ui->textEdit_show->append("<<"+QString::fromUtf8(data));
@@ -62,6 +63,26 @@ void Widget::onClose(const QString &str)
     QMessageBox::information(this,"提示",QString("串口关闭(%1)").arg(str));
     ui->open->setText("打开串口");
     is_=false;
+}
+
+// 注意：sendArray_ 与复选框状态是"发送时刻"的上下文，
+// 回调里读取存在极小的时序窗口（实测 <1ms，人手操作撞不上）。
+// 若以后加入自动发送/高频轮询，应改为把数据作为信号参数传回。
+void Widget::onWriteNote(const QString &str, bool is,qint64 n)
+{
+    if(is){
+        write_ +=n;
+        ui->label->setText(QString("写了:%1字节").arg(write_));
+        if(ui->checkBox->isChecked()){
+            qDebug() << "--- Hex发送 --- 大小:" << n;
+            ui->textEdit_show->append(">>"+sendArray_.toHex(' ').toUpper());
+        }else{
+            qDebug() << "--- Text发送 --- 大小:" << n;
+            ui->textEdit_show->append(">>"+QString::fromUtf8(sendArray_));
+        }
+    }else{
+        QMessageBox::information(this,"提示",str);
+    }
 }
 
 
@@ -102,6 +123,7 @@ void Widget::init()
     connect(serCom_,&SerialComm::openS,this,&Widget::onOpenS);
     connect(serCom_,&SerialComm::close,this,&Widget::onClose);
     connect(serCom_,&SerialComm::read,this,&Widget::onRead);
+    connect(serCom_,&SerialComm::writeNote,this,&Widget::onWriteNote);
 //    connect(serCom_,&SerialComm::openNote,this,&Widget::onOpen);
 
 
@@ -140,7 +162,7 @@ void Widget::on_send_clicked()
 
     if (inputText.isEmpty()) return;
 
-    QByteArray sendArray; // 最终真正要发给串口的真字节
+    /*QByteArray sendArray*/; // 最终真正要发给串口的真字节
 
     if (ui->checkBox->isChecked()) {
         QString clearText=inputText.trimmed().remove(' ').toUpper();
@@ -158,22 +180,22 @@ void Widget::on_send_clicked()
                                     "十六进制字符个数必须是偶数");
             return;
         }
-        sendArray = QByteArray::fromHex(clearText.toUtf8());
-        qDebug() << "--- Hex发送 --- 大小:" << sendArray.size();
-        ui->textEdit_show->append(">>"+sendArray.toHex(' ').toUpper());
+        sendArray_ = QByteArray::fromHex(clearText.toUtf8());
+//        qDebug() << "--- Hex发送 --- 大小:" << sendArray_.size();
+//        ui->textEdit_show->append(">>"+sendArray_.toHex(' ').toUpper());
     }
     else {
         // 纯文本模式
-        sendArray = inputText.toUtf8();
-        qDebug() << "--- text发送 --- 大小:" << sendArray.size();
-        ui->textEdit_show->append(">>"+QString::fromUtf8(sendArray));
+        sendArray_ = inputText.toUtf8();
+//        qDebug() << "--- text发送 --- 大小:" << sendArray_.size();
+//        ui->textEdit_show->append(">>"+QString::fromUtf8(sendArray_));
     }
 
-    emit write(sendArray);
+    emit write(sendArray_);
 
 
-    write_ += sendArray.size();
-    ui->label->setText(QString("写了:%1字节").arg(write_));
+//    write_ += sendArray.size();
+//    ui->label->setText(QString("写了:%1字节").arg(write_));
 
     // ui->textEdit_send->clear();
 }

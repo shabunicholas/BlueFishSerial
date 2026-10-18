@@ -29,11 +29,20 @@ void SerialComm::onSetBaudRate(qint32 v)
     //serialPort_->setBaudRate(v);
 }
 
+
 void SerialComm::onWrite(const QByteArray &data)
 {
+    bool is=true;
+    QString str;
     if(serialPort_ && serialPort_->isOpen()){
-       serialPort_->write(data);
-       //qDebug()<<"写了:"<<data;
+       qint64 n=serialPort_->write(data);
+       //n=-1;
+       if(n!=data.size()){
+           //处理一下
+            str=QString("发送失败n=%1，应该发送%2字节").arg(n).arg(data.size());
+            is=false;
+       }
+       emit writeNote(str,is,n);
     }
 }
 

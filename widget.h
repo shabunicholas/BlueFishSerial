@@ -26,6 +26,7 @@ private slots:
     void onOpenS(const QString &str);
     void onClose(const QString &str);
  //   void onGetSerialPrint(const QString &str);
+    void onWriteNote(const QString &str,bool is,qint64 n);
 
     void on_send_clicked();
 
@@ -53,5 +54,6 @@ private:
     //bool isShow_;
     int write_;
     int read_;
+    QByteArray sendArray_;
 };
 #endif // WIDGET_H
